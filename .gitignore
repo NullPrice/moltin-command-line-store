@@ -1,3 +1,4 @@
-localStorage
-node_modules
+localStorage/
+node_modules/
+.vscode/
 config.js
