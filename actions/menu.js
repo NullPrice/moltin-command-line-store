@@ -39,10 +39,10 @@ async function menu() {
     const answers = await inquirer.prompt(questions);
     switch (answers.menu) {
       case 'browse-products':
-        await cart.handleCartPrompt(await products.handleProducts());
+        await products.showMenu();
         break;
       case 'view-cart':
-        await cart.cartMenu();
+        await cart.showMenu();
         break;
       case 'exit':
         console.log('Exiting!');

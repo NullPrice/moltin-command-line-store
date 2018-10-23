@@ -12,12 +12,7 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
   localStorage = new LocalStorage('./localStorage/cart');
 }
 
-const handleCartQuestions = [
-  {
-    type: 'confirm',
-    name: 'addToCart',
-    message: 'Would you like to add this product to a cart?',
-  },
+const addToCartQuestions = [
   {
     type: 'input',
     name: 'productQuantity',
@@ -27,6 +22,36 @@ const handleCartQuestions = [
     },
   },
 ];
+
+
+/**
+ * Handles the cart prompt if a user selects a product
+ * @param {object} product - Product object
+ */
+async function addToCart(product) {
+  if (!product) {
+    return;
+  }
+  const answers = await inquirer.prompt(addToCartQuestions);
+  if (!localStorage.getItem('referenceId')) {
+    localStorage.setItem('referenceId', uuid());
+  }
+  const cartResponse = await Moltin.Cart(localStorage.getItem('referenceId'))
+      .AddProduct(product.id, answers.productQuantity);
+  console.log(cartResponse);
+  // TODO: Show cart total
+}
+
+/**
+ *
+ */
+async function viewCart() {
+  if (!localStorage.getItem('referenceId')) {
+    console.log('No cart has been initilized -- Add a product to a cart through the product menu!');
+    return;
+  }
+  console.log(await cartFormatter(await Moltin.Cart(localStorage.getItem('referenceId')).Get()));
+}
 
 const cartMenuChoices = [
   {
@@ -55,38 +80,8 @@ const cartMenuQuestions = [
 ];
 
 /**
- * Handles the cart prompt if a user selects a product
- * @param {object} product - Product object
  */
-async function handleCartPrompt(product) {
-  if (!product) {
-    return;
-  }
-  const answers = await inquirer.prompt(handleCartQuestions);
-  if (answers.addToCart) {
-    if (!localStorage.getItem('referenceId')) {
-      localStorage.setItem('referenceId', uuid());
-    }
-    const cartResponse = await Moltin.Cart(localStorage.getItem('referenceId'))
-        .AddProduct(product.id, answers.productQuantity);
-    console.log(cartResponse);
-  }
-}
-
-/**
- *
- */
-async function viewCart() {
-  if (!localStorage.getItem('referenceId')) {
-    console.log('No cart has been initilized');
-    return;
-  }
-  console.log(await cartFormatter(await Moltin.Cart(localStorage.getItem('referenceId')).Get()));
-}
-
-/**
- */
-async function cartMenu() {
+async function showMenu() {
   let backFlag = false;
   while (!backFlag) {
     // We don't want to exit the menu until explicit user input
@@ -96,6 +91,7 @@ async function cartMenu() {
         await viewCart();
         break;
       case 'clear-cart':
+        console.log('TODO');
         break;
       case 'menu':
         backFlag = true;
@@ -106,4 +102,4 @@ async function cartMenu() {
   }
 }
 
-module.exports = {handleCartPrompt, cartMenu};
+module.exports = {addToCart, showMenu};

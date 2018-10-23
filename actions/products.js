@@ -4,11 +4,9 @@ const MoltinGateway = require('@moltin/sdk').gateway;
 const Moltin = MoltinGateway({
   client_id: config.client_id,
 });
+const cart = require('./cart');
 
-
-const output = [];
-
-const questions = [
+const viewProductsQuestions = [
   {
     type: 'rawlist',
     name: 'product',
@@ -24,48 +22,81 @@ const questions = [
           value: element,
         });
       });
-      productsChoice.push(
-          new inquirer.Separator(),
-          {
-            name: 'Menu',
-            value: 'menuOption',
-          });
       return productsChoice;
     },
   },
-  {
-    type: 'confirm',
-    name: 'productConfirmed',
-    message: 'Are you sure?',
-    default: true,
-  },
 ];
 
+const cartPromptQuestion = [
+  {
+    type: 'confirm',
+    name: 'addToCart',
+    message: 'Would you like to add this product to a cart?',
+  },
+];
 
 /**
  * Function to handle product browse commands
  */
-async function handleProducts() {
-  const answers = await inquirer.prompt(questions);
-  if (answers.product === 'menuOption') {
-    // TODO: Abstract this further, these should be boilerplate
-    return;
-  }
-  if (answers.productConfirmed) {
-    // TODO: Select quantity
-    // TODO: Handle not in stock
-    const product = answers.product;
-    console.log(`Name: ${product.name}
+async function viewProducts() {
+  const answers = await inquirer.prompt(viewProductsQuestions);
+  // TODO: Select quantity
+  // TODO: Handle not in stock
+  const product = answers.product;
+  console.log(`Name: ${product.name}
 Description: ${product.description}
 Price: ${product.meta.display_price.with_tax.formatted
-  || product.meta.display_price.without_tax.formatted}
+    || product.meta.display_price.without_tax.formatted}
 `);
-    return product;
-  } else {
-    await handleProducts();
+  const cartAnswer = await inquirer.prompt(cartPromptQuestion);
+  if (cartAnswer.addToCart) {
+    // Should I have another layer that handles the selected product instead of calling cart directly.
+    await cart.addToCart(product);
+  }
+}
+
+const menuChoices = [
+  {
+    name: 'View Products',
+    value: 'view-products',
+  },
+  new inquirer.Separator(),
+  {
+    name: 'Menu',
+    value: 'menu',
+  },
+];
+
+const menuQuestions = [
+  {
+    type: 'rawlist',
+    name: 'menu',
+    message: 'Select an action',
+    paginated: true,
+    choices: menuChoices,
+  },
+];
+
+/**
+ */
+async function showMenu() {
+  let backFlag = false;
+  while (!backFlag) {
+    // We don't want to exit the menu until explicit user input
+    const answers = await inquirer.prompt(menuQuestions);
+    switch (answers.menu) {
+      case 'view-products':
+        await viewProducts();
+        break;
+      case 'menu':
+        backFlag = true;
+        break;
+      default:
+        console.log('Invalid');
+    }
   }
 }
 
 module.exports = {
-  handleProducts,
+  viewProducts, showMenu,
 };
