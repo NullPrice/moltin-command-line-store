@@ -13,13 +13,14 @@ const questions = [
     type: 'rawlist',
     name: 'product',
     message: 'Which product do you want to view more info for?',
+    paginated: true,
     choices: async function() {
       const products = await Moltin.Products.All();
       const productsChoice = [];
       products.data.forEach((element) => {
         productsChoice.push({
           name: element.name,
-          short: element.name,
+          short: JSON.stringify(element.name),
           value: element,
         });
       });
@@ -39,18 +40,21 @@ const questions = [
  * Function to handle product browse commands
  */
 async function handleProducts() {
-  inquirer.prompt(questions).then((answers) => {
-    output.push(answers);
-    if (answers.productConfirmed) {
-      // Parse out 'useful' information and begin another prompt asking if you would like to add cart
-      // TODO: Local storage cart?
-      // TODO: Select quantity
-      console.log(answers);
-    } else {
-    //   console.log('Your favorite TV Shows:', output.join(', '));
-      handleProducts();
-    }
-  });
+  const answers = await inquirer.prompt(questions);
+  output.push(answers);
+  if (answers.productConfirmed) {
+    // TODO: Select quantity
+    // TODO: Handle not in stock
+    const product = answers.product;
+    console.log(`Name: ${product.name}
+Description: ${product.description}
+Price: ${product.meta.display_price.with_tax.formatted
+  || product.meta.display_price.without_tax.formatted}
+`);
+    return product;
+  } else {
+    handleProducts();
+  }
 }
 
 module.exports = {
