@@ -42,6 +42,7 @@ async function menu() {
         await cart.handleCartPrompt(await products.handleProducts());
         break;
       case 'view-cart':
+        await cart.cartMenu();
         break;
       case 'exit':
         console.log('Exiting!');
@@ -50,7 +51,6 @@ async function menu() {
       default:
         console.log('Invalid');
     }
-    console.log(JSON.stringify(answers));
   }
 }
 

@@ -24,6 +24,12 @@ const questions = [
           value: element,
         });
       });
+      productsChoice.push(
+          new inquirer.Separator(),
+          {
+            name: 'Menu',
+            value: 'menuOption',
+          });
       return productsChoice;
     },
   },
@@ -41,7 +47,10 @@ const questions = [
  */
 async function handleProducts() {
   const answers = await inquirer.prompt(questions);
-  output.push(answers);
+  if (answers.product === 'menuOption') {
+    // TODO: Abstract this further, these should be boilerplate
+    return;
+  }
   if (answers.productConfirmed) {
     // TODO: Select quantity
     // TODO: Handle not in stock
@@ -53,7 +62,7 @@ Price: ${product.meta.display_price.with_tax.formatted
 `);
     return product;
   } else {
-    handleProducts();
+    await handleProducts();
   }
 }
 
