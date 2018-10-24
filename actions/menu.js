@@ -2,58 +2,73 @@ const inquirer = require('inquirer');
 const products = require('./products');
 const cart = require('./cart');
 
-const choices = [
-  {
-    name: 'Browse Products',
-    value: 'browse-products',
-  },
-  {
-    name: 'View Cart',
-    value: 'view-cart',
-  },
-  new inquirer.Separator(),
-  {
-    name: 'Exit',
-    value: 'exit',
-  },
-];
-
-const questions = [
-  {
-    type: 'rawlist',
-    name: 'menu',
-    message: 'Select an action',
-    paginated: true,
-    choices: choices,
-  },
-];
-
-
 /**
- * Function to handle rendering main menu
+ * Menu
  */
-async function menu() {
-  let exitFlag = false;
-  while (!exitFlag) {
+class Menu {
+  /**
+   *
+   * @param {*} opts - Dependencies injected
+   */
+  constructor(opts) {
+    this.inquirer = opts.inquirer;
+
+
+    this.cart = opts.cart;
+
+    this.choices = [
+      {
+        name: 'Browse Products',
+        value: 'browse-products',
+      },
+      {
+        name: 'View Cart',
+        value: 'view-cart',
+      },
+      new inquirer.Separator(),
+      {
+        name: 'Exit',
+        value: 'exit',
+      },
+    ];
+
+    this.questions = [
+      {
+        type: 'rawlist',
+        name: 'menu',
+        message: 'Select an action',
+        paginated: true,
+        choices: this.choices,
+      },
+    ];
+  }
+
+
+  /**
+   * Renders the main menu for the storefront
+   */
+  async showMenu() {
+    let exitFlag = false;
+    while (!exitFlag) {
     // We don't want to exit the menu until explicit user input
-    const answers = await inquirer.prompt(questions);
-    switch (answers.menu) {
-      case 'browse-products':
-        await products.showMenu();
-        break;
-      case 'view-cart':
-        await cart.showMenu();
-        break;
-      case 'exit':
-        console.log('Exiting!');
-        exitFlag = true;
-        break;
-      default:
-        console.log('Invalid');
+      const answers = await this.inquirer.prompt(this.questions);
+      switch (answers.menu) {
+        case 'browse-products':
+          await this.products.showMenu();
+          break;
+        case 'view-cart':
+          await this.cart.showMenu();
+          break;
+        case 'exit':
+          console.log('Exiting!');
+          exitFlag = true;
+          break;
+        default:
+          console.log('Invalid');
+      }
     }
   }
 }
 
-module.exports = {
-  menu,
-};
+
+module.exports = Menu;
