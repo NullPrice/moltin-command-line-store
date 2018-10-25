@@ -1,16 +1,30 @@
 const program = require('commander');
 const awilix = require('awilix');
-const products = require('./actions/products');
-const Menu = require('./actions/menu');
+const LocalStorage = require('node-localstorage').LocalStorage;
 
 const container = awilix.createContainer({
   injectionMode: awilix.InjectionMode.PROXY,
 });
 
+const initLocalStorage = ({config}) => {
+  return new LocalStorage(config.storagePath);
+};
+
+const initMoltinSDK = ({config}) => {
+  return require('@moltin/sdk').gateway({
+    client_id: config.clientId,
+  });
+};
+
 container.register({
-  menu: awilix.asClass(Menu),
+  localStorage: awilix.asFunction(initLocalStorage).singleton(),
+  moltin: awilix.asFunction(initMoltinSDK),
+  menu: awilix.asClass(require('./actions/menu')),
   inquirer: awilix.asValue(require('inquirer')),
-  cart: awilix.asValue(require('./actions/cart')),
+  cart: awilix.asClass(require('./actions/cart')),
+  products: awilix.asClass(require('./actions/products')),
+  uuid: awilix.asValue(require('uuid/v4')),
+  config: awilix.asValue(require('./config')),
 });
 
 program.version('0.0.1');
@@ -18,7 +32,7 @@ program.version('0.0.1');
 program.command('browse-products')
     .description('Browse live products')
     .option('-f -filter <value>', 'Filter by product name')
-    .action(products.showMenu);
+    .action(container.resolve('products').showMenu);
 
 program.command('show-menu', '', {isDefault: true, noHelp: true})
     .description('Show all commands in an interactive manner')

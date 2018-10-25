@@ -1,5 +1,7 @@
 const config = {
-    client_id: process.env.MOLTIN_CLIENT_ID || "id"
+  clientId: process.env.MOLTIN_CLIENT_ID,
+  storagePath: './localStorage/moltin',
 };
 
 module.exports = config;
+

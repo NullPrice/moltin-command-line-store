@@ -1,6 +1,3 @@
-const inquirer = require('inquirer');
-const products = require('./products');
-const cart = require('./cart');
 
 /**
  * Menu
@@ -12,8 +9,7 @@ class Menu {
    */
   constructor(opts) {
     this.inquirer = opts.inquirer;
-
-
+    this.products = opts.products;
     this.cart = opts.cart;
 
     this.choices = [
@@ -25,7 +21,7 @@ class Menu {
         name: 'View Cart',
         value: 'view-cart',
       },
-      new inquirer.Separator(),
+      new this.inquirer.Separator(),
       {
         name: 'Exit',
         value: 'exit',
@@ -50,7 +46,7 @@ class Menu {
   async showMenu() {
     let exitFlag = false;
     while (!exitFlag) {
-    // We don't want to exit the menu until explicit user input
+      // We don't want to exit the menu until explicit user input
       const answers = await this.inquirer.prompt(this.questions);
       switch (answers.menu) {
         case 'browse-products':
