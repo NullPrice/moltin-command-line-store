@@ -19,6 +19,7 @@ class Products {
    */
   async viewProducts() {
     const allProducts = await this.moltin.Products.All();
+    console.log(JSON.stringify(allProducts));
     console.table(this.formatter.formatProducts(allProducts));
     const viewProductsQuestions = [
       {
