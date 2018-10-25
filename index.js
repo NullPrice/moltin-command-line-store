@@ -1,6 +1,7 @@
 const program = require('commander');
 const awilix = require('awilix');
 const LocalStorage = require('node-localstorage').LocalStorage;
+const cTable = require('console.table');
 
 const container = awilix.createContainer({
   injectionMode: awilix.InjectionMode.PROXY,
@@ -25,6 +26,7 @@ container.register({
   products: awilix.asClass(require('./actions/products')),
   uuid: awilix.asValue(require('uuid/v4')),
   config: awilix.asValue(require('./config')),
+  formatter: awilix.asValue(require('./formatter/formatter')),
 });
 
 program.version('0.0.1');

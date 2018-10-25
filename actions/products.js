@@ -5,18 +5,21 @@
 class Products {
   /**
    *
-   * @param {*} opts
+   * @param {Object} opts - Injected dependencies
    */
   constructor(opts) {
     this.moltin = opts.moltin;
     this.cart = opts.cart;
     this.inquirer = opts.inquirer;
+    this.formatter = opts.formatter;
   }
 
   /**
-   * Function to handle product browse commands
+   * Renders products
    */
   async viewProducts() {
+    const allProducts = await this.moltin.Products.All();
+    console.table(this.formatter.formatProducts(allProducts));
     const viewProductsQuestions = [
       {
         type: 'rawlist',
@@ -24,14 +27,15 @@ class Products {
         message: 'Which product do you want to view more info for?',
         paginated: true,
         choices: async () => {
-          const products = await this.moltin.Products.All();
           const productsChoice = [];
-          products.data.forEach((element) => {
-            productsChoice.push({
-              name: element.name,
-              short: JSON.stringify(element.name),
-              value: element,
-            });
+          allProducts.data.forEach((product) => {
+            if (product.meta.stock.level > 0) {
+              {productsChoice.push({
+                name: product.name,
+                short: JSON.stringify(product.name),
+                value: product,
+              });}
+            }
           });
           return productsChoice;
         },
@@ -47,8 +51,6 @@ class Products {
     ];
 
     const answers = await this.inquirer.prompt(viewProductsQuestions);
-    // TODO: Select quantity
-    // TODO: Handle not in stock
     const product = answers.product;
     console.log(`Name: ${product.name}\
       Description: ${product.description}\
@@ -57,12 +59,12 @@ class Products {
 
     const cartAnswer = await this.inquirer.prompt(cartPromptQuestion);
     if (cartAnswer.addToCart) {
-      // Should I have another layer that handles the selected product instead of calling cart directly.
       await this.cart.addToCart(product);
     }
   }
 
   /**
+   * Renders product menu
    */
   async showMenu() {
     const menuChoices = [
@@ -89,7 +91,6 @@ class Products {
 
     let backFlag = false;
     while (!backFlag) {
-      // We don't want to exit the menu until explicit user input
       const answers = await this.inquirer.prompt(menuQuestions);
       switch (answers.menu) {
         case 'view-products':

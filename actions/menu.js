@@ -5,7 +5,7 @@
 class Menu {
   /**
    *
-   * @param {*} opts - Dependencies injected
+   * @param {*} opts - Injected dependencies
    */
   constructor(opts) {
     this.inquirer = opts.inquirer;

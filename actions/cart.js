@@ -4,13 +4,14 @@
 class Cart {
   /**
    *
-   * @param {*} opts
+   * @param {object} opts - Dependencies
    */
   constructor(opts) {
     this.inquirer = opts.inquirer;
     this.uuid = opts.uuid;
     this.moltin = opts.moltin;
     this.localStorage = opts.localStorage;
+    this.formatter = opts.formatter;
 
     this.cartMenuChoices = [
       {
@@ -22,8 +23,8 @@ class Cart {
         value: 'checkout-cart',
       },
       {
-        name: 'Clear Cart',
-        value: 'clear-cart',
+        name: 'Delete Cart',
+        value: 'delete-cart',
       },
       new this.inquirer.Separator(),
       {
@@ -58,39 +59,82 @@ class Cart {
         },
       },
     ];
-    if (!product) {
-      return;
-    }
+
     const answers = await this.inquirer.prompt(questions);
-    if (!this.localStorage.getItem('cart')) {
-      this.localStorage.setItem('cart', JSON.stringify({referenceId: this.uuid()}));
+    if (!this.getCart()) {
+      this.createCart();
     }
+
     const cartResponse = await this.moltin
-        .Cart(JSON.parse(this.localStorage.getItem('cart')).referenceId)
+        .Cart(this.getCart().referenceId)
         .AddProduct(product.id, answers.productQuantity);
     console.log(cartResponse);
-    // TODO: Show cart total
   }
+
+  /**
+   * Returns cart localStorage object
+   * @return {object} Cart object containing referenceId
+   */
+  getCart() {
+    try {
+      const cart = JSON.parse(this.localStorage.getItem('cart'));
+      return cart;
+    } catch (err) {
+      return;
+    }
+  }
+
+  /**
+   * Creates a new cart reference
+   */
+  createCart() {
+    console.log('Have we attempted to create a cart...');
+    this.localStorage.setItem('cart',
+        JSON.stringify({referenceId: this.uuid()}));
+  }
+
+  /**
+   * Deletes reference essentially delete the cart
+   */
+  deleteCart() {
+    try {
+      this.moltin.Cart(this.getCart().referenceId).Delete();
+      this.localStorage.removeItem('cart');
+    } catch (err) {
+      console.error(`Failed to delete cart: ${err}`);
+    }
+  }
+
 
   /**
  * Displays the current cart
  */
   async viewCart() {
-    if (!this.localStorage.getItem('cart')) {
-      console.log('No cart has been initilized -- Add a product to a cart through the product menu!');
+    if (!this.getCart()) {
+      console.log('No cart found');
       return;
     }
-    console.log(await this.moltin
-        .Cart(JSON.parse(this.localStorage.getItem('cart'))
-            .referenceId).Get());
+    const cart = await this.moltin
+        .Cart(this.getCart().referenceId).Items();
+    console.table(this.formatter.formatCart(cart));
+    console.table([{
+      cartTotal: cart.meta.display_price.with_tax.formatted,
+    }]);
   }
 
   /**
    *
    */
+  async clearCartItems() {
+    console.log('TODO');
+  }
+
+  /**
+   * Handles prompt questions and enables user to create an order from a cart
+   */
   async checkoutCart() {
     // TODO: New customer?
-    if (!this.localStorage.getItem('cart')) {
+    if (!this.getCart()) {
       console.log('No cart to checkout!');
       return;
     }
@@ -142,15 +186,14 @@ class Cart {
     // Make the order
     const customerDetails = JSON.parse(this.localStorage.getItem('customerDetails'));
     console.log(customerDetails);
-    this.moltin.Cart(JSON.parse(this.localStorage.getItem('cart')).referenceId)
+    this.moltin.Cart(this.getCart.referenceId)
         .Checkout(customerDetails.customer, customerDetails.billing)
         .then((order) => {
           console.log(JSON.stringify(order));
+          this.deleteCart();
         }).catch((err) => {
           console.error(err);
         });
-
-    // Clear cart?
   }
 
   /**
@@ -168,8 +211,8 @@ class Cart {
         case 'checkout-cart':
           await this.checkoutCart();
           break;
-        case 'clear-cart':
-          console.log('TODO');
+        case 'delete-cart':
+          await this.deleteCart();
           break;
         case 'menu':
           backFlag = true;
