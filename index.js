@@ -33,8 +33,11 @@ program.version('0.0.1');
 
 program.command('browse-products')
     .description('Browse live products')
-    .option('-f -filter <value>', 'Filter by product name')
     .action(container.resolve('products').showMenu);
+
+program.command('manage-cart')
+    .description('Browse live products')
+    .action(container.resolve('cart').showMenu);
 
 program.command('show-menu', '', {isDefault: true, noHelp: true})
     .description('Show all commands in an interactive manner')
@@ -45,8 +48,8 @@ program.on('command:*', function() {
       program.args.join(' '));
   process.exit(1);
 });
-program.parse(process.argv);
 
+program.parse(process.argv);
 
 if (process.argv.length < 3) {
   container.resolve('menu').showMenu().then(() => {

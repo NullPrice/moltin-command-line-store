@@ -16,53 +16,79 @@ class Products {
 
   /**
    * Renders products
+   * @param {Objects} products - Products passed in via search functionality
    */
-  async viewProducts() {
-    const allProducts = await this.moltin.Products.All();
-    console.log(JSON.stringify(allProducts));
+  async viewProducts(products) {
+    // Show products information
+    const allProducts = products || await this.moltin.Products.All();
     console.table(this.formatter.formatProducts(allProducts));
+
+    // Build inquirer product select prompt
+    const backOption = 'back-option';
     const viewProductsQuestions = [
       {
         type: 'rawlist',
         name: 'product',
-        message: 'Which product do you want to view more info for?',
+        message: 'Select a product to add to cart.',
         paginated: true,
         choices: async () => {
           const productsChoice = [];
           allProducts.data.forEach((product) => {
             if (product.meta.stock.level > 0) {
-              {productsChoice.push({
-                name: product.name,
-                short: JSON.stringify(product.name),
-                value: product,
-              });}
+              {
+                productsChoice.push({
+                  name: product.name,
+                  short: JSON.stringify(product.name),
+                  value: product,
+                });
+              }
             }
           });
+          productsChoice.push(new this.inquirer.Separator(),
+              {
+                name: 'Back',
+                value: backOption,
+              });
           return productsChoice;
         },
       },
     ];
-
+    const answers = await this.inquirer.prompt(viewProductsQuestions);
+    const product = answers.product;
+    if (product === backOption) {
+      return;
+    }
     const cartPromptQuestion = [
       {
         type: 'confirm',
         name: 'addToCart',
-        message: 'Would you like to add this product to a cart?',
+        message: 'Are you sure?',
       },
     ];
-
-    const answers = await this.inquirer.prompt(viewProductsQuestions);
-    const product = answers.product;
-    console.log(`Name: ${product.name}\
-      Description: ${product.description}\
-      Price: ${product.meta.display_price.with_tax.formatted
-      || product.meta.display_price.without_tax.formatted}`);
 
     const cartAnswer = await this.inquirer.prompt(cartPromptQuestion);
     if (cartAnswer.addToCart) {
       await this.cart.addToCart(product);
     }
   }
+
+  /**
+  * Search products
+  */
+  async searchProducts() {
+    // TODO: Need to expand this further
+    const answer = await this.inquirer.prompt({
+      type: 'input',
+      name: 'searchTerm',
+      message: `Please input a search term to filter products via name`,
+    });
+    await this.viewProducts(await this.moltin.Products.Filter({
+      like: {
+        name: `${answer.searchTerm}`,
+      },
+    }).With(['name']).All());
+  }
+
 
   /**
    * Renders product menu
@@ -73,9 +99,13 @@ class Products {
         name: 'View Products',
         value: 'view-products',
       },
+      {
+        name: 'Search Products',
+        value: 'search-products',
+      },
       new this.inquirer.Separator(),
       {
-        name: 'Menu',
+        name: 'Go back to main menu',
         value: 'menu',
       },
     ];
@@ -97,6 +127,9 @@ class Products {
         case 'view-products':
           await this.viewProducts();
           break;
+        case 'search-products':
+          await this.searchProducts();
+          break;
         case 'menu':
           backFlag = true;
           break;
@@ -106,6 +139,5 @@ class Products {
     }
   }
 }
-
 
 module.exports = Products;

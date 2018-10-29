@@ -1,8 +1,8 @@
 /**
- * Format helper to return a console.table friendly array of product objects
- * @param {array} products - Array of product objects
- * @return {array} - Array of console.table friendly objects
- */
+* Format helper to return a console.table friendly array of product objects
+* @param {object} products - Array of product objects
+* @return {array} - Array of console.table friendly product objects
+*/
 function formatProducts(products) {
   const formattedProducts = [];
   products.data.forEach((product) => {
@@ -15,14 +15,14 @@ function formatProducts(products) {
     });
   });
   return formattedProducts;
-}
+};
 
 /**
- * Format helper to return a console.table friendly array of product objects
- * @param {array} cart - Cart object
+ * Format helper to return a console.table friendly array of cart items
+ * @param {object} cart - Cart items response object
  * @return {array} - Table friendly array for showing cart details
  */
-function formatCart(cart) {
+function formatCartItems(cart) {
   const formattedCart = [];
   cart.data.forEach((product) => {
     formattedCart.push({
@@ -35,7 +35,9 @@ function formatCart(cart) {
     });
   });
   return formattedCart;
-}
+};
 
-
-module.exports = {formatProducts, formatCart};
+module.exports = {
+  formatProducts,
+  formatCartItems,
+};

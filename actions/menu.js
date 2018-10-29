@@ -18,8 +18,8 @@ class Menu {
         value: 'browse-products',
       },
       {
-        name: 'View Cart',
-        value: 'view-cart',
+        name: 'Manage Cart',
+        value: 'manage-cart',
       },
       new this.inquirer.Separator(),
       {
@@ -52,7 +52,7 @@ class Menu {
         case 'browse-products':
           await this.products.showMenu();
           break;
-        case 'view-cart':
+        case 'manage-cart':
           await this.cart.showMenu();
           break;
         case 'exit':

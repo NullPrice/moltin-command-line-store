@@ -12,36 +12,6 @@ class Cart {
     this.moltin = opts.moltin;
     this.localStorage = opts.localStorage;
     this.formatter = opts.formatter;
-
-    this.cartMenuChoices = [
-      {
-        name: 'View Cart',
-        value: 'view-cart',
-      },
-      {
-        name: 'Checkout Cart',
-        value: 'checkout-cart',
-      },
-      {
-        name: 'Delete Cart',
-        value: 'delete-cart',
-      },
-      new this.inquirer.Separator(),
-      {
-        name: 'Menu',
-        value: 'menu',
-      },
-    ];
-
-    this.cartMenuQuestions = [
-      {
-        type: 'rawlist',
-        name: 'menu',
-        message: 'Select an action',
-        paginated: true,
-        choices: this.cartMenuChoices,
-      },
-    ];
   }
 
   /**
@@ -61,47 +31,55 @@ class Cart {
     ];
 
     const answers = await this.inquirer.prompt(questions);
-    if (!this.getCart()) {
-      this.createCart();
+    await this.createCart();
+    try {
+      await this.moltin
+          .Cart(await this.getCart().referenceId)
+          .AddProduct(product.id, answers.productQuantity);
+      console.log('Product added to cart!');
+    } catch (err) {
+      throw new Error(`Failed to add product to cart: ${err.message}`);
     }
-
-    const cartResponse = await this.moltin
-        .Cart(this.getCart().referenceId)
-        .AddProduct(product.id, answers.productQuantity);
-    console.log(cartResponse);
   }
 
   /**
    * Returns cart localStorage object
    * @return {object} Cart object containing referenceId
    */
-  getCart() {
+  async getCart() {
     try {
       const cart = JSON.parse(this.localStorage.getItem('cart'));
       return cart;
     } catch (err) {
-      return;
+      // Gracefully handle
+      return false;
     }
   }
 
   /**
    * Creates a new cart reference
    */
-  createCart() {
-    console.log('Have we attempted to create a cart...');
-    this.localStorage.setItem('cart',
-        JSON.stringify({referenceId: this.uuid()}));
+  async createCart() {
+    if (!await this.getCart()) {
+      try {
+        this.localStorage.setItem('cart',
+            JSON.stringify({referenceId: this.uuid()}));
+      } catch (err) {
+        throw new Error(`Failed to create cart: ${err.message}`);
+      }
+    }
   }
 
   /**
    * Deletes reference essentially delete the cart
    */
-  deleteCart() {
+  async deleteCart() {
     try {
-      this.moltin.Cart(this.getCart().referenceId).Delete();
+      await this.moltin.Cart(this.getCart().referenceId).Delete();
       this.localStorage.removeItem('cart');
+      console.log('Cart has been deleted!');
     } catch (err) {
-      console.error(`Failed to delete cart: ${err}`);
+      throw new Error(`Failed to delete cart: ${err.message}`);
     }
   }
 
@@ -110,39 +88,29 @@ class Cart {
  * Displays the current cart
  */
   async viewCart() {
-    if (!this.getCart()) {
+    if (!await this.getCart()) {
       console.log('No cart found');
       return;
     }
     const cart = await this.moltin
-        .Cart(this.getCart().referenceId).Items();
-    console.table(this.formatter.formatCart(cart));
+        .Cart(await this.getCart().referenceId).Items();
+    console.table(this.formatter.formatCartItems(cart));
     console.table([{
       cartTotal: cart.meta.display_price.with_tax.formatted,
     }]);
   }
 
   /**
-   *
-   */
-  async clearCartItems() {
-    console.log('TODO');
-  }
-
-  /**
    * Handles prompt questions and enables user to create an order from a cart
    */
   async checkoutCart() {
-    // TODO: New customer?
-    if (!this.getCart()) {
+    if (!await this.getCart()) {
       console.log('No cart to checkout!');
       return;
     }
 
-    // TODO this should be part of a customer file / object
-    // TODO infact all of these 'actions' should instead be objects
+    // TODO: this should be part of a customer actions object
     if (!this.localStorage.getItem('customerDetails')) {
-      // We haven't got a customer, let's create one and set it in localStorage
       // TODO: Multiple customer support? (Probably not likely needed from a command line store)
       const prompter = (questions) => {
         const output = [];
@@ -183,27 +151,56 @@ class Cart {
         billing: billing,
       }));
     }
+
     // Make the order
     const customerDetails = JSON.parse(this.localStorage.getItem('customerDetails'));
-    console.log(customerDetails);
-    this.moltin.Cart(this.getCart.referenceId)
-        .Checkout(customerDetails.customer, customerDetails.billing)
-        .then((order) => {
-          console.log(JSON.stringify(order));
-          this.deleteCart();
-        }).catch((err) => {
-          console.error(err);
-        });
+    try {
+      const order = await this.moltin.Cart(this.getCart.referenceId)
+          .Checkout(customerDetails.customer, customerDetails.billing);
+      console.log(`Order successfully created. Your order id is: ${order.data.id}`);
+      this.deleteCart();
+    } catch (err) {
+      throw new Error(`Order failed to be created: ${err.message}`);
+    }
   }
 
   /**
    * Renders menu list for carts
    */
   async showMenu() {
+    const cartMenuChoices = [
+      {
+        name: 'View Cart',
+        value: 'view-cart',
+      },
+      {
+        name: 'Checkout Cart',
+        value: 'checkout-cart',
+      },
+      {
+        name: 'Delete Cart',
+        value: 'delete-cart',
+      },
+      new this.inquirer.Separator(),
+      {
+        name: 'Go back to main menu',
+        value: 'menu',
+      },
+    ];
+
+    const cartMenuQuestions = [
+      {
+        type: 'rawlist',
+        name: 'menu',
+        message: 'Select an action',
+        paginated: true,
+        choices: cartMenuChoices,
+      },
+    ];
     let backFlag = false;
     while (!backFlag) {
       // We don't want to exit the menu until explicit user input
-      const answers = await this.inquirer.prompt(this.cartMenuQuestions);
+      const answers = await this.inquirer.prompt(cartMenuQuestions);
       switch (answers.menu) {
         case 'view-cart':
           await this.viewCart();
